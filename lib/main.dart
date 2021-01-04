@@ -1,6 +1,7 @@
+//Author: Elad_Abramov - portfolio website: https://myportfolioelad.herokuapp.com/
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-
 import 'Calculator.dart';
 import 'Splash.dart';
 
@@ -20,6 +21,7 @@ class MyApp extends StatelessWidget {
             if (snapshot.hasError) {
               print("no");
             }
+            //check connection to firebase app
             if (snapshot.connectionState == ConnectionState.done) {
               return Splash();
             }

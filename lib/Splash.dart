@@ -1,7 +1,9 @@
+//Author: Elad_Abramov - portfolio website: https://myportfolioelad.herokuapp.com/
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+//Animated splash for first screen
 class Splash extends StatefulWidget {
   SplashState createState() => new SplashState();
 }
@@ -19,6 +21,7 @@ class SplashState extends State<Splash>
   }
 
   navigationPage() async {
+    //after ends go to calculator screen
     Navigator.of(context).pushReplacementNamed("Calculator");
   }
 
@@ -52,6 +55,7 @@ class SplashState extends State<Splash>
           new Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
+              //Two logos of the company - just for fun :)
               new Image.asset(
                 'assets/sdslogo.png',
                 width: animation.value * 300,
