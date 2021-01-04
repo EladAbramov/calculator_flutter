@@ -1,4 +1,11 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:awesome_dialog/awesome_dialog.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 
 class Calculator extends StatefulWidget {
   @override
@@ -11,15 +18,102 @@ class _CalculatorState extends State<Calculator> {
   String operation = '';
   String valAfterOperation = '';
   String finalResult='';
+  UploadTask _upload;
+  bool loading;
+  bool isOk = false;
+  var jsonFileUrl = '';
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+  File jsonFile;
+  Directory dir;
+  bool fileExists = false;
+  Map<String, dynamic> fileContent;
+  String filePath = 'file.json';
+  String resultsTextIndex='0';
+  int resultsIndex = 0;
+
+
+  void createFile(Map<String, dynamic> content, Directory dir, String fileName) {
+    print("Creating file!");
+    File file = new File(dir.path + "/" + fileName);
+    file.createSync();
+    fileExists = true;
+    file.writeAsStringSync(json.encode(content));
+  }
+
+  void writeToFile(String key, dynamic value) {
+    print("Writing to file!");
+    Map<String, dynamic> content = {key: value};
+    if (fileExists) {
+      print("File exists");
+      Map<String, dynamic> jsonFileContent = json.decode(jsonFile.readAsStringSync());
+      jsonFileContent.addAll(content);
+      resultsIndex = resultsIndex + 1;
+      resultsTextIndex = resultsIndex.toString();
+      jsonFile.writeAsStringSync(json.encode(jsonFileContent));
+    } else {
+      print("File does not exist!");
+      createFile(content, dir, filePath);
+    }
+    this.setState(() => fileContent = json.decode(jsonFile.readAsStringSync()));
+    uploadResultJsonToFS();
+    print(fileContent);
+  }
 
   uploadResultJsonToFS(){
+    loading = true;
+    setState(() {
+      _upload = _storage.ref().child(filePath).putFile(jsonFile);
+    });
+
+    if(_upload!=null){
+      print("Upload finish successfully");
+      loading=false;
+      isOk=true;
+      return AwesomeDialog(
+          context: context,
+          dialogType: DialogType.SUCCES,
+          animType: AnimType.BOTTOMSLIDE,
+          title: 'Thanks For The File :)',
+          headerAnimationLoop: false,
+          desc: '',
+          btnOkOnPress: () {
+            getJsonUrl();
+          }
+      ).show();
+    }
 
   }
+  getJsonUrl()async {
+    Reference rfs = _upload.snapshot.ref;
+    return Timer(Duration(seconds: 5), () async {
+      jsonFileUrl = await rfs.getDownloadURL();
+      print(jsonFileUrl);
+    });
+  }
+
+  void initState() {
+    super.initState();
+    getApplicationDocumentsDirectory().then((Directory directory) {
+      dir = directory;
+      jsonFile = new File(dir.path + "/" + filePath);
+      print(jsonFile.path);
+      fileExists = jsonFile.existsSync();
+      if (fileExists) this.setState(() => fileContent = json.decode(jsonFile.readAsStringSync()));
+    });
+
+    setState(() {
+      jsonFileUrl = '';
+      loading = false;
+    });
+
+  }
+
 
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Center(child: Text('Calculator', style: TextStyle(color: Colors.white70,)),),
+        title: Center(child: Text('Calculator', style: TextStyle(color: Colors.black,)),),
+        backgroundColor: Colors.blue[500],
       ),
       body: Container(
         child: Column(
@@ -77,7 +171,7 @@ class _CalculatorState extends State<Calculator> {
             ),
             Container(
               width: 400,
-              color: Colors.blue[200],
+              color: Colors.blue[600],
               child: Text(
                 finalResult=='' ? '' : finalResult,
                 textAlign: TextAlign.center,
@@ -118,7 +212,7 @@ class _CalculatorState extends State<Calculator> {
           buildOperationButton(buttons[15]),
           buildButton(buttons[16]),
           buildButton(buttons[17]),
-          buildButton(buttons[18]),
+          buildOperationButton(buttons[18]),
           buildOperationButton(buttons[19]),
 
         ],
@@ -134,7 +228,6 @@ class _CalculatorState extends State<Calculator> {
           setState(() {
             if(operation==''){
               initialVal = initialVal + '' + button;
-              print(initialVal);
             }
             else{
               valAfterOperation = valAfterOperation + '' + button;
@@ -274,7 +367,7 @@ class _CalculatorState extends State<Calculator> {
           }
           if(button=='S'){
             setState(() {
-              uploadResultJsonToFS();
+              writeToFile(resultsTextIndex, finalResult);
             });
           }
 
