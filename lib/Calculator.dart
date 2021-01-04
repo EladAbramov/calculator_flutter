@@ -14,7 +14,7 @@ class Calculator extends StatefulWidget {
 
 class _CalculatorState extends State<Calculator> {
   String initialVal = '';
-  List<String> buttons = [ 'AC', '', '%', '/', '7', '8', '9', 'x', '4', '5', '6', '-', '1', '2', '3', '+', '0', '.', 'S', '=' ];
+  List<String> buttons = [ 'AC', '', '%', '/', '7', '8', '9', 'x', '4', '5', '6', '-', '1', '2', '3', '+', '0', '.', '^', '=' ];
   String operation = '';
   String valAfterOperation = '';
   String finalResult='';
@@ -28,8 +28,6 @@ class _CalculatorState extends State<Calculator> {
   bool fileExists = false;
   Map<String, dynamic> fileContent;
   String filePath = 'file.json';
-  String resultsTextIndex='0';
-  int resultsIndex = 0;
 
 
   void createFile(Map<String, dynamic> content, Directory dir, String fileName) {
@@ -47,8 +45,6 @@ class _CalculatorState extends State<Calculator> {
       print("File exists");
       Map<String, dynamic> jsonFileContent = json.decode(jsonFile.readAsStringSync());
       jsonFileContent.addAll(content);
-      resultsIndex = resultsIndex + 1;
-      resultsTextIndex = resultsIndex.toString();
       jsonFile.writeAsStringSync(json.encode(jsonFileContent));
     } else {
       print("File does not exist!");
@@ -93,7 +89,7 @@ class _CalculatorState extends State<Calculator> {
 
   void initState() {
     super.initState();
-    getApplicationDocumentsDirectory().then((Directory directory) {
+    getExternalStorageDirectory().then((Directory directory) {
       dir = directory;
       jsonFile = new File(dir.path + "/" + filePath);
       print(jsonFile.path);
@@ -145,7 +141,7 @@ class _CalculatorState extends State<Calculator> {
                         initialVal=='' ? '0' : initialVal,
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                            fontSize: 64,
+                            fontSize: 35,
                             fontWeight: FontWeight.w700
                         ),
                       ),
@@ -153,7 +149,7 @@ class _CalculatorState extends State<Calculator> {
                         operation=='' ? '' : operation,
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                            fontSize: 64,
+                            fontSize: 35,
                             fontWeight: FontWeight.w700
                         ),
                       ),
@@ -161,7 +157,7 @@ class _CalculatorState extends State<Calculator> {
                         valAfterOperation=='' ? '' : valAfterOperation,
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                            fontSize: 64,
+                            fontSize: 35,
                             fontWeight: FontWeight.w700
                         ),
                       ),
@@ -171,14 +167,17 @@ class _CalculatorState extends State<Calculator> {
             ),
             Container(
               width: 400,
+              height: 74,
               color: Colors.blue[600],
-              child: Text(
-                finalResult=='' ? '' : finalResult,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                    fontSize: 64,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.brown
+              child: Center(
+                child: Text(
+                  finalResult=='' ? '' : finalResult,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      fontSize: 35,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.brown
+                  ),
                 ),
               ),
             ),
@@ -261,7 +260,18 @@ class _CalculatorState extends State<Calculator> {
             onPressed: () {
               setState(() {
                 var initialValLength = initialVal.length;
-                initialVal = initialVal.substring(0, initialValLength - 1);
+                var valAfterOperationLength = valAfterOperation.length;
+
+                if(initialValLength!=0){
+                  initialVal = initialVal.substring(0, initialValLength - 1);
+                }
+                if(operation.isEmpty){
+                  valAfterOperation = valAfterOperation.substring(0, valAfterOperationLength);
+                }
+                if(initialValLength==0){
+                  operation='';
+                  valAfterOperation='';
+                }
               });
             },
             icon:  Icon(Icons.backspace),
@@ -302,6 +312,9 @@ class _CalculatorState extends State<Calculator> {
                   initialVal = tempResultVal.toString();
                   valAfterOperation = '';
                   operation = '';
+                  setState(() {
+                    writeToFile("last result", finalResult);
+                  });
                 }
                 else if(operation=='-'){
                   double tempInitVal = double.parse(initialVal);
@@ -365,9 +378,15 @@ class _CalculatorState extends State<Calculator> {
               }
             });
           }
-          if(button=='S'){
+          if(button=='^'){
             setState(() {
-              writeToFile(resultsTextIndex, finalResult);
+              if (initialVal != '') {
+                double tempInitVal = double.parse(initialVal);
+                double tempResultVal = (tempInitVal)*(tempInitVal);
+                finalResult = tempResultVal.toString();
+                initialVal = tempResultVal.toString();
+                operation = '';
+              }
             });
           }
 
@@ -378,7 +397,7 @@ class _CalculatorState extends State<Calculator> {
               color: Colors.deepOrange[100]
           ),
           child: Center(
-            child: Text(button, style: TextStyle(fontSize: 28, color: Colors.deepOrangeAccent),),
+            child: Text(button, style: TextStyle(fontSize: 30, color: Colors.deepOrangeAccent),),
           ),
         ),
       ),
